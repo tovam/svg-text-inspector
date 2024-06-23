@@ -2,10 +2,10 @@ import sys
 import xml.etree.ElementTree as ET
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, QPushButton, 
-    QFileDialog, QColorDialog, QLabel, QGraphicsView, QGraphicsScene, QMessageBox
+    QFileDialog, QColorDialog, QGraphicsView, QGraphicsScene, QMessageBox
 )
 from PyQt5.QtSvg import QGraphicsSvgItem, QSvgRenderer
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QUrl
 from PyQt5.QtGui import QPainter
 
 class SvgViewer(QGraphicsView):
@@ -19,6 +19,7 @@ class SvgViewer(QGraphicsView):
         self.scene = QGraphicsScene(self)
         self.setScene(self.scene)
         self.svg_item = None
+        self.setAcceptDrops(True)
 
     def load_svg(self, svg_content):
         self.scene.clear()
@@ -43,19 +44,65 @@ class SvgViewer(QGraphicsView):
     def reset_zoom(self):
         self.resetTransform()
 
+    def dragEnterEvent(self, event):
+        if event.mimeData().hasUrls():
+            event.acceptProposedAction()
+
+    def dragMoveEvent(self, event):
+        if event.mimeData().hasUrls():
+            event.acceptProposedAction()
+
+    def dropEvent(self, event):
+        if event.mimeData().hasUrls():
+            for url in event.mimeData().urls():
+                file_path = url.toLocalFile()
+                if file_path.lower().endswith('.svg'):
+                    try:
+                        with open(file_path, 'r') as file:
+                            svg_content = file.read()
+                            self.parentWidget().text_edit.setPlainText(svg_content)
+                    except Exception as e:
+                        print(f"Failed to open file: {e}")
+
+class SvgTextEdit(QTextEdit):
+    def __init__(self):
+        super().__init__()
+        self.setAcceptDrops(True)
+
+    def dragEnterEvent(self, event):
+        if event.mimeData().hasUrls():
+            event.acceptProposedAction()
+
+    def dragMoveEvent(self, event):
+        if event.mimeData().hasUrls():
+            event.acceptProposedAction()
+
+    def dropEvent(self, event):
+        if event.mimeData().hasUrls():
+            for url in event.mimeData().urls():
+                file_path = url.toLocalFile()
+                if file_path.lower().endswith('.svg'):
+                    try:
+                        with open(file_path, 'r') as file:
+                            svg_content = file.read()
+                            self.setPlainText(svg_content)
+                    except Exception as e:
+                        print(f"Failed to open file: {e}")
+
 class SvgEditor(QWidget):
     def __init__(self):
         super().__init__()
         self.initUI()
+        self.setAcceptDrops(True)
 
     def initUI(self):
-        self.setWindowTitle('SVG Editor')
+        self.setWindowTitle('SVG Inspector')
 
         # Main layout
         layout = QHBoxLayout()
 
         # Text edit for SVG code
-        self.text_edit = QTextEdit()
+        self.text_edit = SvgTextEdit()
         self.text_edit.setPlaceholderText("Write SVG code here...")
         layout.addWidget(self.text_edit)
 
@@ -145,6 +192,26 @@ class SvgEditor(QWidget):
         if color.isValid():
             color_code = color.name()
             self.text_edit.insertPlainText(color_code)
+
+    def dragEnterEvent(self, event):
+        if event.mimeData().hasUrls():
+            event.acceptProposedAction()
+
+    def dragMoveEvent(self, event):
+        if event.mimeData().hasUrls():
+            event.acceptProposedAction()
+
+    def dropEvent(self, event):
+        if event.mimeData().hasUrls():
+            for url in event.mimeData().urls():
+                file_path = url.toLocalFile()
+                if file_path.lower().endswith('.svg'):
+                    try:
+                        with open(file_path, 'r') as file:
+                            svg_content = file.read()
+                            self.text_edit.setPlainText(svg_content)
+                    except Exception as e:
+                        print(f"Failed to open file: {e}")
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
